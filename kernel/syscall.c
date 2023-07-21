@@ -6,6 +6,7 @@
 #include "proc.h"
 #include "syscall.h"
 #include "defs.h"
+#include "systrace.h"
 
 // Fetch the uint64 at addr from the current process.
 int
@@ -106,30 +107,30 @@ extern uint64 sys_sysinfo(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
-static uint64 (*syscalls[])(void) = {
-[SYS_fork]    sys_fork,
-[SYS_exit]    sys_exit,
-[SYS_wait]    sys_wait,
-[SYS_pipe]    sys_pipe,
-[SYS_read]    sys_read,
-[SYS_kill]    sys_kill,
-[SYS_exec]    sys_exec,
-[SYS_fstat]   sys_fstat,
-[SYS_chdir]   sys_chdir,
-[SYS_dup]     sys_dup,
-[SYS_getpid]  sys_getpid,
-[SYS_sbrk]    sys_sbrk,
-[SYS_sleep]   sys_sleep,
-[SYS_uptime]  sys_uptime,
-[SYS_open]    sys_open,
-[SYS_write]   sys_write,
-[SYS_mknod]   sys_mknod,
-[SYS_unlink]  sys_unlink,
-[SYS_link]    sys_link,
-[SYS_mkdir]   sys_mkdir,
-[SYS_close]   sys_close,
-[SYS_trace]   sys_trace,
-[SYS_sysinfo] sys_sysinfo,
+static struct syscall_info syscalls[] = {
+[SYS_fork]    { sys_fork, 0 },
+[SYS_exit]    { sys_exit, 1 },
+[SYS_wait]    { sys_wait, 1 },
+[SYS_pipe]    { sys_pipe, 1 },
+[SYS_read]    { sys_read, 3 },
+[SYS_kill]    { sys_kill, 1 },
+[SYS_exec]    { sys_exec, 2 },
+[SYS_fstat]   { sys_fstat, 2 },
+[SYS_chdir]   { sys_chdir, 1 },
+[SYS_dup]     { sys_dup, 1 },
+[SYS_getpid]  { sys_getpid, 0 },
+[SYS_sbrk]    { sys_sbrk, 1 },
+[SYS_sleep]   { sys_sleep, 1 },
+[SYS_uptime]  { sys_uptime, 0 },
+[SYS_open]    { sys_open, 2 },
+[SYS_write]   { sys_write, 3 },
+[SYS_mknod]   { sys_mknod, 3 },
+[SYS_unlink]  { sys_unlink, 1 },
+[SYS_link]    { sys_link, 2 },
+[SYS_mkdir]   { sys_mkdir, 1 },
+[SYS_close]   { sys_close, 1 },
+[SYS_trace]   { sys_trace, 1 },
+[SYS_sysinfo] { sys_sysinfo, 1 },
 };
 
 // An array mapping syscall numbers from syscall.h
@@ -167,13 +168,21 @@ syscall(void)
   struct proc *p = myproc();
 
   num = p->trapframe->a7;
-  if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+  if(num > 0 && num < NELEM(syscalls) && syscalls[num].func) {
     // Use num to lookup the system call function for num, call it,
     // and store its return value in p->trapframe->a0
-    p->trapframe->a0 = syscalls[num]();
-    if(p->trace & (1 << num))
-      printf("%d %s: syscall %s -> %d\n",
-              p->pid, p->name, syscalls_name[num], p->trapframe->a0);
+    p->trapframe->a0 = syscalls[num].func();
+    if(p->trace & (1 << num)) {
+      printf("%d %s: syscall %s -> %d\t",
+             p->pid, p->name, syscalls_name[num], p->trapframe->a0);
+      if(syscalls[num].num_args > 0) {
+        printf(" args[");
+        for(int i = 0; i < syscalls[num].num_args && i <= 5; i++)
+          printf("%s0x%x", i > 0 ? ", " : "", argraw(i));
+        printf("]");
+      }
+      printf("\n");
+    }
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);
