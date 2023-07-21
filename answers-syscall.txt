@@ -1,0 +1,14 @@
+Q: Looking at the backtrace output, which function called syscall?
+A: usertrap
+
+Q: What is the value of p->trapframe->a7 and what does that value represent? (Hint: look user/initcode.S, the first user program xv6 starts.)
+A: p->trapframe->a7 = 7, it represent the System call number 7(SYS_exec)
+
+Q: What was the previous mode that the CPU was in?
+A: user mode, 
+
+Q: Write down the assembly instruction the kernel is panicing at. Which register corresponds to the varialable num?
+A: lw a3,0(zero), the num corresponds register a3;
+
+Q: What is the name of the binary that was running when the kernel paniced? What is its process id (pid)?
+A: initcode, the pid of it is 1
