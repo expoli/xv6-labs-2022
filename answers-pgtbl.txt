@@ -1,0 +1,10 @@
+Q: Which other xv6 system call(s) could be made faster using this shared page? Explain how.
+A: pipe(): Pipes usually have a buffer in the kernel that is written to by the writing process and read from by the reading process. Using shared memory for this buffer could eliminate the need to copy the data to and from the kernel.
+
+Q: Explain the output of vmprint in terms of Fig 3-4 from the text. What does page 0 contain? What is in page 2? When running in user mode, could the process read/write the memory mapped by page 1? What does the third to last page contain?
+A: the page 0's pte is 0x0000000021fda01b the binary value is 0b00100001111111011010000000011011. the flag is PTE_V PTE_R PTE_X PTE_U. so the page 0 is text seg.
+   the page 2's pte is 0x0000000021fd9007 the binary value is 0b00100001111111011001000000000111. the flag is PTE_V PTE_R PTE_W
+   the page 1's pte is 0x0000000021fd9417 the binary value is 0b00100001111111011001010000010111. the flag is PTE_V PTE_R PTE_W PTE_U. the PTE_U bit is set, so witch process running in user mode can read/write this memory.
+   the third to last page contain kernel user shared memory.
+   the page 510's pte is 0x0000000021fdd007 the binary value is 0b00100001111111011101000000000111. the flag is PTE_V PTE_R PTE_W. so this page should trapframe.
+   the page 511's pte is 0x0000000020001c0b the binary value is 0b00100000000000000001110000001011. the flag is PTE_V PTE_R PTE_X. so this page should trampoline.
