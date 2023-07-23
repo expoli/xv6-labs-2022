@@ -503,3 +503,26 @@ sys_pipe(void)
   }
   return 0;
 }
+
+uint64
+sys_sigalarm(void)
+{
+  int alarminterval;
+  uint64 handler;
+  struct proc *p = myproc();
+
+  argint(0, &alarminterval);
+  argaddr(1, &handler);
+
+  p->alarminterval = alarminterval;
+  p->alarmticksleft = alarminterval;
+  p->alarmhandler = handler;
+
+  return 0;
+}
+
+uint64
+sys_sigreturn(void)
+{
+  return 0;
+}
