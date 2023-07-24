@@ -81,10 +81,12 @@ usertrap(void)
     if(p->alarminterval != 0){
       p->alarmticksleft--;
       if(p->alarmticksleft == 0){
-        // 使用 trapframe 后的一部分内存, trapframe大小为288B, 因此只要在trapframe地址后288以上地址都可, 此处512只是为了取整数幂
-        p->alarmtrapframe = p->trapframe + 512;
+        if(p->alarmtrapframe == 0)
+          if((p->alarmtrapframe = (struct trapframe *)kalloc()) == 0){
+            printf("usertrap(): cannot allocate alarmtrapframe\n");
+            setkilled(p);
+          }
         memmove(p->alarmtrapframe, p->trapframe, sizeof(struct trapframe));
-
         p->trapframe->epc = (uint64) p->alarmhandler;
       }
     }

@@ -522,6 +522,9 @@ sys_sigalarm(void)
     p->alarminterval = 0;
     p->alarmticksleft = 0;
     p->alarmhandler = 0;
+    if(p->alarmtrapframe != 0)
+      kfree(p->alarmtrapframe);
+    p->alarmtrapframe = 0;
     return 0;
   }
 
@@ -536,11 +539,10 @@ uint64
 sys_sigreturn(void)
 {
   struct proc *p = myproc();
-  if(p->trapframe + 512 != p->alarmtrapframe)
+  if(!p->alarmtrapframe)
     return -1;
 
   memmove(p->trapframe, p->alarmtrapframe, sizeof(struct trapframe));
-  p->alarmtrapframe = 0;  // invalidates the alarmtrapframe
   p->alarmticksleft = p->alarminterval;
 
   return p->trapframe->a0;

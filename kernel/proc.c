@@ -162,8 +162,14 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
+  if(p->alarmtrapframe)
+    kfree((void*)p->alarmtrapframe);
+  p->alarmtrapframe = 0;
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
+  p->alarminterval = 0;
+  p->alarmticksleft = 0;
+  p->alarmhandler = 0;
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
