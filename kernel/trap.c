@@ -81,8 +81,10 @@ usertrap(void)
     if(p->alarminterval != 0){
       p->alarmticksleft--;
       if(p->alarmticksleft == 0){
-        p->alarmticksleft = p->alarminterval;
-        p->trapframe->a0 = 0;
+        // 使用 trapframe 后的一部分内存, trapframe大小为288B, 因此只要在trapframe地址后288以上地址都可, 此处512只是为了取整数幂
+        p->alarmtrapframe = p->trapframe + 512;
+        memmove(p->alarmtrapframe, p->trapframe, sizeof(struct trapframe));
+
         p->trapframe->epc = (uint64) p->alarmhandler;
       }
     }

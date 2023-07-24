@@ -509,10 +509,21 @@ sys_sigalarm(void)
 {
   int alarminterval;
   uint64 handler;
-  struct proc *p = myproc();
 
   argint(0, &alarminterval);
   argaddr(1, &handler);
+
+  if(alarminterval < 0)
+    return -1;
+
+  struct proc *p = myproc();
+
+  if(alarminterval == 0) {
+    p->alarminterval = 0;
+    p->alarmticksleft = 0;
+    p->alarmhandler = 0;
+    return 0;
+  }
 
   p->alarminterval = alarminterval;
   p->alarmticksleft = alarminterval;
@@ -524,5 +535,13 @@ sys_sigalarm(void)
 uint64
 sys_sigreturn(void)
 {
-  return 0;
+  struct proc *p = myproc();
+  if(p->trapframe + 512 != p->alarmtrapframe)
+    return -1;
+
+  memmove(p->trapframe, p->alarmtrapframe, sizeof(struct trapframe));
+  p->alarmtrapframe = 0;  // invalidates the alarmtrapframe
+  p->alarmticksleft = p->alarminterval;
+
+  return p->trapframe->a0;
 }

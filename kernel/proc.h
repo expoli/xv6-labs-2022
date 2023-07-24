@@ -100,7 +100,8 @@ struct proc {
   uint64 sz;                   // Size of process memory (bytes)
   int alarminterval;           // Alarm interval
   int alarmticksleft;          // Alarm ticks left
-  uint64 alarmhandler;          // Alarm handler
+  uint64 alarmhandler;         // Alarm handler
+  struct trapframe *alarmtrapframe;
   pagetable_t pagetable;       // User page table
   struct trapframe *trapframe; // data page for trampoline.S
   struct context context;      // swtch() here to run process

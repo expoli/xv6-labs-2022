@@ -127,6 +127,7 @@ found:
   p->alarminterval = 0;
   p->alarmticksleft = 0;
   p->alarmhandler = 0;
+  p->alarmtrapframe = 0;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
