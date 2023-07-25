@@ -67,7 +67,7 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
-  } else if(r_scause() == 15 && uncopied_cow(p->pagetable, r_stval())) {  // scause 为 15 代表尝试写入引发的缺页错误。
+  } else if(r_scause() == 15 || r_scause() == 13 || r_scause() == 12) {  // scause 为 15 代表尝试写入引发的缺页错误。
     // Synchronous page fault from kernel.
     // This is most likely caused by a kernel
     // access to a user space address, for example
@@ -75,10 +75,8 @@ usertrap(void)
     // or if a user page is paged out and the kernel
     // needs to bring it back in.
     uint64 addr = r_stval();
-    if(cowalloc(p->pagetable, addr) < 0) {
-      printf("pid %d %s: trap out of memory addr %p ip %p\n",
-             p->pid, p->name, addr, r_sepc());
-      printf("             sp %p stval %p\n", r_sp(), r_stval());
+    if(cowalloc(p->pagetable, addr) < 0){
+      printf("alloc user page fault addr=%p\n", addr);
       setkilled(p);
     }
   } else {

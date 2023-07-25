@@ -23,29 +23,57 @@ struct {
   struct run *freelist;
 } kmem;
 
-int page_ref_array[PHYSTOP / PGSIZE];
+#define PG_REFCNT(pa) (pageref.ref[(uint64)pa /PGSIZE])
 
-struct spinlock refcnt_lock;
+struct {
+  struct spinlock lock;
+  int ref[PHYSTOP/PGSIZE];
+} pageref;
 
-void refcnt_inc(void *pa){
-  acquire(&refcnt_lock);
-  page_ref_array[(uint64)pa / PGSIZE]++;
-  release(&refcnt_lock);
+void
+refcnt_inc(void *pa){
+  if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
+    panic("refcnt_inc");
+  acquire(&pageref.lock);
+  PG_REFCNT(pa)++;
+  release(&pageref.lock);
 }
 
-void refcnt_dec(void *pa){
-  acquire(&refcnt_lock);
-  page_ref_array[(uint64)pa / PGSIZE]--;
-  release(&refcnt_lock);
+void
+refcnt_init(void *pa){
+  if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
+    panic("refcnt_init");
+  acquire(&pageref.lock);
+  PG_REFCNT(pa) = 1;
+  release(&pageref.lock);
+}
+
+void
+refcnt_dec(void *pa){
+  if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
+    panic("refcnt_dec");
+  acquire(&pageref.lock);
+  PG_REFCNT(pa)--;
+  release(&pageref.lock);
+}
+
+int
+get_refcnt(void *pa){
+  if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
+    panic("get_refcnt");
+  acquire(&pageref.lock);
+  int ret = PG_REFCNT(pa);
+  release(&pageref.lock);
+  return ret;
 }
 
 void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
-  initlock(&refcnt_lock, "ref_cnt");
+  initlock(&pageref.lock, "ref_cnt");
+  memset(pageref.ref, 0, sizeof(pageref.ref));
   freerange(end, (void*)PHYSTOP);
-  memset(page_ref_array, 0, sizeof(page_ref_array));
 }
 
 void
@@ -69,7 +97,7 @@ kfree(void *pa)
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
 
-  if(page_ref_array[(uint64)pa / PGSIZE] > 1){
+  if(get_refcnt(pa) > 1){
     refcnt_dec(pa);
     return;
   }
@@ -95,9 +123,10 @@ kalloc(void)
 
   acquire(&kmem.lock);
   r = kmem.freelist;
-  refcnt_inc(r);
-  if(r)
+  if(r) {
     kmem.freelist = r->next;
+    refcnt_init((void*)r);
+  }
   release(&kmem.lock);
 
   if(r)
