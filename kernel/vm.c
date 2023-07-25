@@ -167,12 +167,13 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 int
 cowalloc(pagetable_t pagetable, uint64 va)
 {
-  uint64 pa, new_pa, va_rounded;
-  int flags;
-  pte_t *pte = walk(pagetable, va, 0);
-
   if(va >= MAXVA)
     return -1;
+
+  uint64 pa, new_pa, va_rounded;
+  int flags;
+
+  pte_t *pte = walk(pagetable, va, 0);
 
   if( pte == 0 || (*pte & PTE_V) == 0 || (*pte & PTE_U) == 0)
     return -1;

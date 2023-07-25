@@ -67,7 +67,7 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
-  } else if(r_scause() == 15 || r_scause() == 13 || r_scause() == 12) {  // scause 为 15 代表尝试写入引发的缺页错误。
+  } else if(r_scause() == 15) {  // scause 为 15 代表尝试写入引发的缺页错误。
     // Synchronous page fault from kernel.
     // This is most likely caused by a kernel
     // access to a user space address, for example

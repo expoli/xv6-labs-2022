@@ -23,11 +23,13 @@ struct {
   struct run *freelist;
 } kmem;
 
-#define PG_REFCNT(pa) (pageref.ref[(uint64)pa /PGSIZE])
+#define PG2REFIDX(_pa) ((((uint64)_pa) - KERNBASE) / PGSIZE)
+#define MX_PGIDX PG2REFIDX(PHYSTOP)
+#define PG_REFCNT(_pa) (pageref.ref[PG2REFIDX((_pa))])
 
 struct {
   struct spinlock lock;
-  int ref[PHYSTOP/PGSIZE];
+  int ref[MX_PGIDX];
 } pageref;
 
 void
